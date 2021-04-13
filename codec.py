@@ -13,13 +13,14 @@ file_selected = FALSE
 key_selected = FALSE
 error = ""
 
+# Tkinter Process
 window = Tk()
 window.title("Codec")
 window.minsize(200, 200)
 window.iconbitmap("logo.ico")
 window.config(background='#41B77F')
 
-
+# Selection of the matrix allowing to encrypt or decrypt a file
 def select_file_key():
     global key
     global key_selected
@@ -29,12 +30,14 @@ def select_file_key():
     file_key = open(filename, "r")
     content = file_key.read()
 
+    # Checking that the matrix is of the form G4C = [XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX]
     regex = r"^G4C=\[(0|1){8}(\s(0|1){8}){3}\]\s*$"
     if re.match(regex, content):
         print("Clé OK")
     else:
         print("Erreur clé non valide")
         return -1
+    # Decomposition to recover bit strings
     left = content.index('[')
     right = content.index(']')
     key = content[left + 1:right]
@@ -42,7 +45,7 @@ def select_file_key():
     file_key.close()
     key_selected = TRUE
 
-
+# Selection of the file to encrypt or decrypt
 def select_file():
     global extension
     global file_content
@@ -61,7 +64,7 @@ def select_file():
     file.close()
     file_selected = TRUE
 
-
+# Function used to decrypt the file selectionned
 def file_decryption():
     global key
     global file_content
@@ -77,13 +80,13 @@ def file_decryption():
     counter = 0
     final_key = []
 
-    # --------------------------------------------------------
-    # Boucle pour ranger la matrice G4C dans une matrice numpy
+    # Converting the matrix to a numpy matrix
     for i in range(4):
         for j in range(8):
             key_matrix[i, j] = key[counter]
             counter = counter + 1
 
+    # Finding the coordinates of the identity matrix
     for k in range(4):
         for l in range(8):
             if np.array_equal(key_matrix[:, l], identity_matrix[:, k]):
@@ -93,10 +96,12 @@ def file_decryption():
 
     binary_message = []
 
+    # Message decryption
     for i in range(len(bytes_group)):
         for j in range(4):
             binary_message.append(bytes_group[i][final_key[j]])
 
+    # Writing the message to a file
     binary_message = ''.join(binary_message)
     message = bytes(int(binary_message[i: i + 8], 2) for i in range(0, len(binary_message), 8))
     file = open("REPONSE" + extension, "wb")
@@ -104,7 +109,7 @@ def file_decryption():
     file.close()
     window.destroy()
 
-
+# Function used to decrypt the file selectionned
 def file_encryption():
     global key
     global file_content
@@ -120,8 +125,7 @@ def file_encryption():
     result = []
     counter = 0
 
-    # --------------------------------------------------------
-    # Boucle pour ranger la matrice G4C dans une matrice numpy
+    # Converting the matrix to a numpy matrix
     for i in range(4):
         for j in range(8):
             key_matrix[i, j] = key[counter]
@@ -129,6 +133,7 @@ def file_encryption():
 
     bytes_group = [bin(code)[2:].zfill(8) for code in file_content]
 
+    # Message encryption
     for i in range(len(bytes_group)):
         for j in range(0, 8, 4):
             inter = np.asarray(list(bytes_group[i][j:j + 4]), dtype=np.byte) @ key_matrix
@@ -142,6 +147,7 @@ def file_encryption():
 
                 result.append(str(inter[m]))
 
+    # Writing the message to a file
     result = ''.join(result)
     message = bytes(int(result[i: i + 8], 2) for i in range(0, len(result), 8))
 
